@@ -20,12 +20,14 @@ This project automates the lifecycle of creating and verifying NFTs on the Solan
 
 📁 Project Structure
 
+```bash
 .
 ├── src/
 │ ├── create-collection.ts      # Creates a collection NFT
 │ ├── create-nft.ts             # Mints an NFT into the collection
 │ └── verify-nft.ts             # Verifies the NFT belongs to the collection
 └── run.sh                      # Run script for full flow
+```
 
 ---
 
