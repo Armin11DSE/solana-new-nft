@@ -1,5 +1,6 @@
 {
     "name": "SolForge",
-    "description": "SolForge NFT for devnet",
+    "symbol": "SFRG",
+    "description": "SolForge NFT collection for devnet",
     "image": "https://raw.githubusercontent.com/ARMIN11DSE/solana-new-nft/main/resources/SolForge.png"
 }

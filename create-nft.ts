@@ -2,9 +2,9 @@ import { createNft, fetchDigitalAsset, mplTokenMetadata } from "@metaplex-founda
 import { airdropIfRequired, getExplorerLink, getKeypairFromFile } from "@solana-developers/helpers";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { clusterApiUrl, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { AccountNotFoundError, generateSigner, keypairIdentity, percentAmount } from "@metaplex-foundation/umi";
+import { AccountNotFoundError, generateSigner, keypairIdentity, percentAmount, publicKey } from "@metaplex-foundation/umi";
 import { join } from "path";
-import { writeFileSync, existsSync, mkdirSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 
 const connection = new Connection(clusterApiUrl("devnet"))
 
@@ -22,30 +22,49 @@ umi.use(keypairIdentity(umiUser));
 
 console.log("Set up Umi instance for user");
 
-const collectionMint = generateSigner(umi);
+function getCollectionAddress() {
+    const collectionAddressFilePath = join(process.cwd(), 'data', 'collection-address.json');
+    
+    if (!existsSync(collectionAddressFilePath)) {
+        throw new Error('Collection address file not found. Please run create-collection.ts first.');
+    }
+    
+    const collectionData = JSON.parse(readFileSync(collectionAddressFilePath, 'utf8'));
+    return publicKey(collectionData.address);
+}
+
+const collectionAddress = getCollectionAddress();
+
+console.log(`Using collection address: ${collectionAddress}`);
+console.log(`Creating NFT...`);
+
+const mint = generateSigner(umi);
 
 const transaction = createNft(umi, {
-    mint: collectionMint,
-    name: "SolForge",
-    symbol: "SFRG",
-    uri: "https://raw.githubusercontent.com/ARMIN11DSE/solana-new-nft/main/metadata/collection-metadata.json",
+    mint,
+    name: "Sunsteel Ember",
+    symbol: "SSE",
+    uri: "https://raw.githubusercontent.com/ARMIN11DSE/solana-new-nft/main/metadata/nft-metadata.json",
     sellerFeeBasisPoints: percentAmount(0),
-    isCollection: true,
+    collection: {
+        key: collectionAddress,
+        verified: false
+    },
 });
 
 await transaction.sendAndConfirm(umi);
 
 console.log("Transaction confirmed, fetching digital asset...");
 
-let createdCollectionNft;
+let createdNft;
 let retries = 0;
 const maxRetries = 10;
 
 while (retries < maxRetries) {
     try {
-        createdCollectionNft = await fetchDigitalAsset(
+        createdNft = await fetchDigitalAsset(
             umi,
-            collectionMint.publicKey,
+            mint.publicKey,
         );
         break;
     } catch (error) {
@@ -59,24 +78,9 @@ while (retries < maxRetries) {
     }
 }
 
-const collectionAddressData = {
-    address: collectionMint.publicKey,
-};
-
-const dataDir = join(process.cwd(), "data");
-if (!existsSync(dataDir)) {
-    mkdirSync(dataDir, { });
-}
-
-writeFileSync(
-    join(dataDir, "collection-address.json"),
-    JSON.stringify(collectionAddressData),
-);
-
 console.log(
-    `Created Collection!\n Address is ${getExplorerLink(
+    `Created NFT! Address is ${getExplorerLink(
         "address",
-        createdCollectionNft!.mint.publicKey,
-        "devnet"
-    )})`
-)
+        createdNft!.mint.publicKey,
+        "devnet")}`
+);
