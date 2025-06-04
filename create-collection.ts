@@ -2,7 +2,7 @@ import { createNft, fetchDigitalAsset, mplTokenMetadata } from "@metaplex-founda
 import { airdropIfRequired, getExplorerLink, getKeypairFromFile } from "@solana-developers/helpers";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { clusterApiUrl, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { generateSigner, keypairIdentity, percentAmount } from "@metaplex-foundation/umi";
+import { AccountNotFoundError, generateSigner, keypairIdentity, percentAmount } from "@metaplex-foundation/umi";
 
 const connection = new Connection(clusterApiUrl("devnet"))
 
@@ -22,7 +22,7 @@ console.log("Set up Umi instance for user");
 
 const collectionMint = generateSigner(umi);
 
-const transaction = await createNft(umi, {
+const transaction = createNft(umi, {
     mint: collectionMint,
     name: "SolForge",
     symbol: "SFRG",
@@ -33,15 +33,34 @@ const transaction = await createNft(umi, {
 
 await transaction.sendAndConfirm(umi);
 
-const createdCollectionNft = await fetchDigitalAsset(
-    umi,
-    collectionMint.publicKey,
-);
+console.log("Transaction confirmed, fetching digital asset...");
+
+let createdCollectionNft;
+let retries = 0;
+const maxRetries = 10;
+
+while (retries < maxRetries) {
+    try {
+        createdCollectionNft = await fetchDigitalAsset(
+            umi,
+            collectionMint.publicKey,
+        );
+        break;
+    } catch (error) {
+        if (error instanceof AccountNotFoundError && retries < maxRetries - 1) {
+            console.log(`Attempt ${retries + 1} failed, retrying in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            retries++;
+        } else {
+            throw error;
+        }
+    }
+}
 
 console.log(
     `Created Collection!\n Address is ${getExplorerLink(
         "address",
-        createdCollectionNft.mint.publicKey,
+        createdCollectionNft!.mint.publicKey,
         "devnet"
     )})`
 )
