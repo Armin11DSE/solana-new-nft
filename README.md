@@ -35,12 +35,16 @@ This project automates the lifecycle of creating and verifying NFTs on the Solan
 
 1. Install dependencies
 
+    ```bash
     npm install
+    ```
 
 2. Run the full NFT flow
 
+    ```bash
     chmod +x run.sh
     ./run.sh
+    ```
 
 This script will:
 
